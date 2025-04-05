@@ -10,18 +10,23 @@
         /* Estilo básico para el cuerpo y la fuente */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Gris claro de Tailwind */
+            /* Transición suave para cambios de color */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         /* Estilos para hacer los elementos arrastrables más visibles */
         .task.dragging {
             opacity: 0.5;
-            background-color: #dbeafe; /* Azul claro */
-            border: 1px dashed #60a5fa; /* Borde azul */
+            /* Ajustar colores para ambos temas si es necesario, aunque la opacidad ayuda */
+            /* background-color: #dbeafe; */ /* Azul claro */
+             border: 1px dashed #60a5fa; /* Borde azul */
+             /* dark:border-blue-400; */
         }
         /* Estilo para resaltar la zona donde se puede soltar */
         .task-list.drag-over {
+            /* Usar colores que funcionen en ambos modos o usar dark: */
             background-color: #e0f2fe; /* Azul muy claro */
-            border: 2px dashed #38bdf8; /* Borde azul cielo */
+             border: 2px dashed #38bdf8; /* Borde azul cielo */
+             /* dark:bg-sky-900 dark:border-sky-600; */
         }
         /* Asegurar que el contenedor principal ocupe espacio */
         #projects-container {
@@ -32,27 +37,68 @@
             min-height: 150px; /* Altura mínima para las listas */
             max-height: 400px; /* Altura máxima antes de scroll */
             overflow-y: auto; /* Scroll vertical si el contenido excede la altura máxima */
+            /* Scrollbar styling (opcional, puede requerir prefijos) */
+            scrollbar-width: thin;
+            scrollbar-color: #a0aec0 #edf2f7; /* thumb track */
         }
+         /* Estilo scrollbar para modo oscuro (opcional) */
+         .dark .task-list {
+            scrollbar-color: #718096 #2d3748; /* thumb track */
+         }
+
+         /* Ocultar icono no activo */
+         .dark #theme-toggle-sun-icon { display: none; }
+         #theme-toggle-moon-icon { display: none; }
+         .dark #theme-toggle-moon-icon { display: inline-block; } /* Mostrar luna en oscuro */
+         html:not(.dark) #theme-toggle-sun-icon { display: inline-block; } /* Mostrar sol en claro */
+
+
     </style>
+     <script>
+        // Configuración de Tailwind para habilitar el modo oscuro basado en clase
+        tailwind.config = {
+          darkMode: 'class', // Habilita el modo oscuro basado en la clase 'dark' en <html>
+          theme: {
+            extend: {
+              // Puedes añadir colores personalizados aquí si lo necesitas
+            }
+          }
+        }
+
+        // --- Lógica inicial para aplicar el tema ---
+        // Aplica el tema guardado ANTES de que el DOM esté completamente cargado para evitar parpadeos
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark'); // Asegurarse que no esté si es light
+        }
+    </script>
 </head>
-<body class="p-6">
+<body class="p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
-    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Gestor de Proyectos y Tareas</h1>
+    <div class="max-w-6xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md relative">
+         <button id="theme-toggle" class="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-150">
+             <i id="theme-toggle-sun-icon" data-lucide="sun" class="w-5 h-5"></i>
+             <i id="theme-toggle-moon-icon" data-lucide="moon" class="w-5 h-5"></i>
+             <span class="sr-only">Cambiar tema</span> 
+         </button>
 
-        <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 class="text-xl font-semibold mb-3 text-gray-700">Crear Nuevo Proyecto</h2>
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Gestor de Proyectos y Tareas</h1>
+
+        <div class="mb-8 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <h2 class="text-xl font-semibold mb-3 text-gray-700 dark:text-gray-200">Crear Nuevo Proyecto</h2>
             <div class="flex space-x-2">
-                <input type="text" id="new-project-name" placeholder="Nombre del Proyecto" class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="new-project-name" placeholder="Nombre del Proyecto" class="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
                 <button id="add-project-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md flex items-center space-x-1 transition duration-150 ease-in-out">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
                     <span>Añadir Proyecto</span>
                 </button>
             </div>
-            <p id="project-error" class="text-red-500 text-sm mt-1 h-4"></p> </div>
+            <p id="project-error" class="text-red-500 dark:text-red-400 text-sm mt-1 h-4"></p> </div>
 
         <div id="projects-container" class="space-y-8">
-            </div>
+             </div>
     </div>
 
     <script>
@@ -61,6 +107,7 @@
         const newProjectNameInput = document.getElementById('new-project-name');
         const addProjectBtn = document.getElementById('add-project-btn');
         const projectError = document.getElementById('project-error');
+        const themeToggleButton = document.getElementById('theme-toggle');
         let projects = {}; // Objeto para almacenar los proyectos y sus tareas
         let draggedTask = null; // Referencia a la tarea que se está arrastrando
 
@@ -72,6 +119,31 @@
             done: 'Terminadas'
         };
         const LIST_KEYS = Object.keys(LIST_NAMES); // ['todo', 'routine', 'inProgress', 'done']
+
+        // --- Lógica del Tema ---
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+             // Actualizar iconos (asegurarse que Lucide esté listo)
+             if (typeof lucide !== 'undefined') {
+                lucide.createIcons(); // Refrescar iconos por si acaso
+             }
+        }
+
+        themeToggleButton.addEventListener('click', () => {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            applyTheme(isDarkMode ? 'light' : 'dark');
+        });
+
+         // Aplicar tema inicial al cargar (ya se hace en el <head>, pero podemos asegurar aquí también)
+         // const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+         // applyTheme(currentTheme); // No es estrictamente necesario si ya se hizo en <head>
+
 
         // --- Cargar Datos de LocalStorage ---
         function loadProjects() {
@@ -96,6 +168,9 @@
                     localStorage.removeItem('todoProjects'); // Limpiar storage corrupto
                 }
                 renderAllProjects();
+            } else {
+                 // Si no hay proyectos guardados, mostrar el mensaje inicial
+                 renderAllProjects();
             }
         }
 
@@ -105,23 +180,25 @@
                 localStorage.setItem('todoProjects', JSON.stringify(projects));
             } catch (e) {
                 console.error("Error al guardar proyectos en LocalStorage:", e);
-                // Considerar informar al usuario si el almacenamiento falla
             }
         }
 
         // --- Funciones de Renderizado ---
 
-        // Renderiza todos los proyectos cargados
         function renderAllProjects() {
             projectsContainer.innerHTML = ''; // Limpiar contenedor
             if (Object.keys(projects).length === 0) {
-                projectsContainer.innerHTML = '<p class="text-center text-gray-500">No hay proyectos aún. ¡Crea uno!</p>';
+                projectsContainer.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">No hay proyectos aún. ¡Crea uno!</p>';
             } else {
-                for (const projectId in projects) {
-                    // Asegurarse de que el proyecto tenga datos válidos antes de renderizar
+                const sortedProjectIds = Object.keys(projects).sort((a, b) => {
+                     // Ordenar por ID (fecha de creación) descendente para mostrar los más nuevos primero
+                     return parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]);
+                 });
+
+                // for (const projectId in projects) { // Orden original
+                sortedProjectIds.forEach(projectId => { // Ordenado
                     if (projects[projectId] && projects[projectId].name && projects[projectId].tasks) {
                          renderProject(projectId, projects[projectId].name);
-                         // Renderizar tareas para cada lista del proyecto
                          LIST_KEYS.forEach(listKey => {
                              if (Array.isArray(projects[projectId].tasks[listKey])) {
                                 projects[projectId].tasks[listKey].forEach(task => {
@@ -130,77 +207,62 @@
                              }
                          });
                     } else {
-                        console.warn(`Proyecto con ID ${projectId} tiene datos inválidos o incompletos. Omitiendo renderizado.`);
-                        // Opcionalmente, eliminar el proyecto corrupto
-                        // delete projects[projectId];
-                        // saveProjects();
+                        console.warn(`Proyecto con ID ${projectId} tiene datos inválidos. Omitiendo.`);
                     }
-                }
+                });
             }
              // Re-inicializar iconos después de renderizar TODO
-            lucide.createIcons();
+             if (typeof lucide !== 'undefined') {
+                 lucide.createIcons();
+             }
         }
 
-        // Renderiza un único proyecto en el DOM
         function renderProject(projectId, projectName) {
             const projectElement = document.createElement('div');
             projectElement.id = `project-${projectId}`;
-            projectElement.className = 'project-item p-5 border border-gray-300 rounded-lg bg-white shadow mb-6'; // Añadido project-item y mb-6
-            projectElement.dataset.projectId = projectId; // Guardar ID en el dataset
+            // Clases actualizadas con dark:
+            projectElement.className = 'project-item p-5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow mb-6';
+            projectElement.dataset.projectId = projectId;
 
             projectElement.innerHTML = `
-                <h3 class="text-2xl font-semibold mb-4 text-gray-700">${projectName}</h3>
+                <h3 class="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">${projectName}</h3>
                 <div class="mb-4 flex space-x-2">
-                    <input type="text" id="new-task-text-${projectId}" placeholder="Nueva tarea para '${projectName}'" class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <button class="add-task-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-md flex items-center space-x-1 transition duration-150 ease-in-out" data-project-id="${projectId}">
+                    <input type="text" id="new-task-text-${projectId}" placeholder="Nueva tarea para '${projectName}'" class="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
+                    <button class="add-task-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-md flex items-center space-x-1 transition duration-150 ease-in-out">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>Añadir Tarea</span>
                     </button>
                 </div>
-                <p id="task-error-${projectId}" class="text-red-500 text-sm mb-2 h-4"></p> <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <p id="task-error-${projectId}" class="text-red-500 dark:text-red-400 text-sm mb-2 h-4"></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     ${LIST_KEYS.map(key => `
-                        <div class="bg-gray-100 p-3 rounded-lg shadow-inner flex flex-col"> <h4 class="font-semibold mb-3 text-gray-600 text-center">${LIST_NAMES[key]}</h4>
-                            <div id="list-${projectId}-${key}" class="task-list space-y-2 flex-grow" data-project-id="${projectId}" data-list-key="${key}"> </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-inner flex flex-col">
+                            <h4 class="font-semibold mb-3 text-gray-600 dark:text-gray-300 text-center">${LIST_NAMES[key]}</h4>
+                            <div id="list-${projectId}-${key}" class="task-list space-y-2 flex-grow" data-project-id="${projectId}" data-list-key="${key}">
+                                </div>
                         </div>
                     `).join('')}
                 </div>
-                 <button class="delete-project-btn mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md flex items-center space-x-1 text-sm transition duration-150 ease-in-out" data-project-id="${projectId}">
+                 <button class="delete-project-btn mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md flex items-center space-x-1 text-sm transition duration-150 ease-in-out">
                     <i data-lucide="trash-2" class="w-3 h-3"></i>
                     <span>Eliminar Proyecto</span>
                 </button>
             `;
-            // Insertar antes del final para que los nuevos proyectos aparezcan arriba (o appendChild para abajo)
-            projectsContainer.insertBefore(projectElement, projectsContainer.firstChild);
-            // projectsContainer.appendChild(projectElement); // Para añadir al final
+            // Insertar al principio (o usar appendChild para añadir al final)
+             projectsContainer.appendChild(projectElement); // Cambiado a appendChild para orden cronológico natural
+            // projectsContainer.insertBefore(projectElement, projectsContainer.firstChild); // Para nuevos arriba
 
-            // Añadir event listeners específicos para este proyecto
+
+            // Añadir event listeners
             const addTaskBtn = projectElement.querySelector('.add-task-btn');
             const newTaskInput = projectElement.querySelector(`#new-task-text-${projectId}`);
             const deleteProjectBtn = projectElement.querySelector('.delete-project-btn');
 
-            // Asegurarse de que los elementos existen antes de añadir listeners
-            if (addTaskBtn) {
-                addTaskBtn.addEventListener('click', () => handleAddTask(projectId));
-            }
-            if (newTaskInput) {
-                newTaskInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        handleAddTask(projectId);
-                    }
-                });
-            }
-             if (deleteProjectBtn) {
-                 // Pasar el evento para poder detener la propagación si es necesario
-                 deleteProjectBtn.addEventListener('click', (event) => {
-                     // console.log("Click detectado en botón eliminar proyecto:", projectId); // Log para depuración
-                     handleDeleteProject(projectId, event);
-                 });
-             } else {
-                 console.error("No se encontró el botón de eliminar para el proyecto:", projectId);
-             }
+            if (addTaskBtn) addTaskBtn.addEventListener('click', () => handleAddTask(projectId));
+            if (newTaskInput) newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAddTask(projectId); });
+            if (deleteProjectBtn) deleteProjectBtn.addEventListener('click', (event) => handleDeleteProject(projectId, event));
 
-
-            // Añadir listeners para drag and drop a las listas de este proyecto
+            // Listeners para drag and drop
             const taskLists = projectElement.querySelectorAll('.task-list');
             taskLists.forEach(list => {
                 list.addEventListener('dragover', handleDragOver);
@@ -209,214 +271,177 @@
                 list.addEventListener('drop', handleDrop);
             });
 
-             // Llamar a createIcons DESPUÉS de añadir el elemento al DOM principal
-             lucide.createIcons();
+             // Llamar a createIcons DESPUÉS de añadir el elemento al DOM
+             if (typeof lucide !== 'undefined') {
+                 lucide.createIcons();
+             }
         }
 
-        // Renderiza una tarea en la lista correspondiente
         function renderTask(projectId, listKey, taskId, taskText) {
             const listElement = document.getElementById(`list-${projectId}-${listKey}`);
-            if (!listElement) {
-                console.warn(`Lista no encontrada para renderizar tarea: list-${projectId}-${listKey}`);
-                return; // Si la lista no existe, no hacer nada
-            }
+            if (!listElement) return;
 
             const taskElement = document.createElement('div');
             taskElement.id = `task-${taskId}`;
-            taskElement.className = 'task bg-white p-2 rounded shadow cursor-grab border border-gray-200 flex justify-between items-center';
+            // Clases actualizadas con dark:
+            taskElement.className = 'task bg-white dark:bg-gray-600 p-2 rounded shadow cursor-grab border border-gray-200 dark:border-gray-500 flex justify-between items-center';
             taskElement.draggable = true;
             taskElement.dataset.taskId = taskId;
-            taskElement.dataset.projectId = projectId; // Guardar a qué proyecto pertenece
-            taskElement.dataset.listKey = listKey; // Guardar en qué lista está
+            taskElement.dataset.projectId = projectId;
+            taskElement.dataset.listKey = listKey;
 
             taskElement.innerHTML = `
-                <span class="text-sm text-gray-800 break-words mr-2">${taskText}</span> <button class="delete-task-btn text-red-400 hover:text-red-600 flex-shrink-0" data-task-id="${taskId}" data-project-id="${projectId}" data-list-key="${listKey}"> <i data-lucide="x" class="w-4 h-4"></i>
+                <span class="text-sm text-gray-800 dark:text-gray-100 break-words mr-2">${taskText}</span>
+                <button class="delete-task-btn text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0">
+                    <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             `;
 
-            // Añadir listeners para drag and drop a la tarea
+            // Listeners drag/drop
             taskElement.addEventListener('dragstart', handleDragStart);
             taskElement.addEventListener('dragend', handleDragEnd);
 
-            // Añadir listener para el botón de eliminar tarea
+            // Listener botón eliminar
             const deleteBtn = taskElement.querySelector('.delete-task-btn');
             if (deleteBtn) {
+                 // Pasar datos necesarios al listener
                  deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Evitar que el dragstart se active al hacer clic en el botón
+                    e.stopPropagation();
                     handleDeleteTask(projectId, listKey, taskId);
                 });
             }
 
             listElement.appendChild(taskElement);
-             // Re-inicializar iconos después de añadir la tarea (especialmente si se usan iconos complejos)
-             lucide.createIcons(); // Llamada para asegurar que el icono 'x' se renderice si es necesario
+             // Re-inicializar iconos
+             if (typeof lucide !== 'undefined') {
+                 lucide.createIcons();
+             }
         }
 
-        // --- Manejadores de Eventos ---
+        // --- Manejadores de Eventos (sin cambios en la lógica principal, solo logs/errores) ---
 
-        // Añadir nuevo proyecto
+        function handleAddTask(projectId) {
+            const taskInput = document.getElementById(`new-task-text-${projectId}`);
+            const taskError = document.getElementById(`task-error-${projectId}`);
+            if (!taskInput || !taskError) return;
+
+            const taskText = taskInput.value.trim();
+            taskError.textContent = '';
+
+            if (taskText) {
+                const taskId = `task_${Date.now()}`;
+                const newTask = { id: taskId, text: taskText };
+
+                if (!projects[projectId] || !projects[projectId].tasks) {
+                    console.error("Error: Proyecto inválido al añadir tarea:", projectId);
+                    taskError.textContent = 'Error interno.';
+                    return;
+                }
+                 if (!Array.isArray(projects[projectId].tasks.todo)) {
+                     projects[projectId].tasks.todo = [];
+                 }
+
+                projects[projectId].tasks.todo.push(newTask);
+                renderTask(projectId, 'todo', taskId, taskText);
+                saveProjects();
+                taskInput.value = '';
+            } else {
+                 taskError.textContent = 'La descripción de la tarea no puede estar vacía.';
+            }
+        }
+
         addProjectBtn.addEventListener('click', () => {
             const projectName = newProjectNameInput.value.trim();
-            projectError.textContent = ''; // Limpiar error previo
-             // Quitar el mensaje inicial si existe
+            projectError.textContent = '';
              const initialMessage = projectsContainer.querySelector('p');
              if (initialMessage && initialMessage.textContent.includes('No hay proyectos')) {
                  projectsContainer.innerHTML = '';
              }
 
             if (projectName) {
-                const projectId = `proj_${Date.now()}`; // ID único simple
+                const projectId = `proj_${Date.now()}`;
                 projects[projectId] = {
                     name: projectName,
-                    tasks: {
-                        todo: [],
-                        routine: [],
-                        inProgress: [],
-                        done: []
-                    }
+                    tasks: { todo: [], routine: [], inProgress: [], done: [] }
                 };
                 renderProject(projectId, projectName); // Renderiza y añade listeners
-                saveProjects(); // Guardar cambios
-                newProjectNameInput.value = ''; // Limpiar input
+                saveProjects();
+                newProjectNameInput.value = '';
             } else {
                 projectError.textContent = 'El nombre del proyecto no puede estar vacío.';
             }
         });
 
-        // Permitir añadir proyecto con Enter
         newProjectNameInput.addEventListener('keypress', (e) => {
-             if (e.key === 'Enter') {
-                 addProjectBtn.click();
-             }
+             if (e.key === 'Enter') addProjectBtn.click();
         });
 
-
-        // Añadir nueva tarea a un proyecto
-        function handleAddTask(projectId) {
-            const taskInput = document.getElementById(`new-task-text-${projectId}`);
-            const taskError = document.getElementById(`task-error-${projectId}`);
-            if (!taskInput || !taskError) return; // Salir si los elementos no existen
-
-            const taskText = taskInput.value.trim();
-            taskError.textContent = ''; // Limpiar error
-
-            if (taskText) {
-                const taskId = `task_${Date.now()}`; // ID único simple
-                const newTask = { id: taskId, text: taskText };
-
-                // Asegurarse de que la estructura de tareas exista
-                if (!projects[projectId] || !projects[projectId].tasks) {
-                    console.error("Intentando añadir tarea a un proyecto inválido o sin estructura de tareas:", projectId);
-                    taskError.textContent = 'Error interno al añadir tarea.';
-                    return;
-                }
-                 if (!Array.isArray(projects[projectId].tasks.todo)) {
-                     projects[projectId].tasks.todo = []; // Inicializar si no es array
-                 }
-
-                // Añadir la tarea a la lista 'Tareas' (todo) por defecto
-                projects[projectId].tasks.todo.push(newTask);
-                renderTask(projectId, 'todo', taskId, taskText); // Renderiza y añade listeners
-                saveProjects(); // Guardar cambios
-                taskInput.value = ''; // Limpiar input
-            } else {
-                 taskError.textContent = 'La descripción de la tarea no puede estar vacía.';
-            }
-        }
-
-        // Eliminar un proyecto
         function handleDeleteProject(projectId, event) {
-             console.log(`Intentando eliminar proyecto con ID: ${projectId}`); // Log de depuración
-
-             // Detener la propagación si es necesario (aunque en un botón directo no suele serlo)
+             console.log(`Intentando eliminar proyecto: ${projectId}`);
              if (event) event.stopPropagation();
-
              const projectData = projects[projectId];
 
              if (projectData) {
-                 // Usar el nombre guardado en los datos para la confirmación
                  if (confirm(`¿Estás seguro de que quieres eliminar el proyecto "${projectData.name}" y todas sus tareas?`)) {
-                    console.log(`Confirmado eliminar: ${projectId}`); // Log de depuración
-
-                    // Eliminar del DOM
+                    console.log(`Confirmado eliminar: ${projectId}`);
                     const projectElement = document.getElementById(`project-${projectId}`);
                     if (projectElement) {
-                        console.log(`Eliminando elemento del DOM: project-${projectId}`); // Log de depuración
                         projectElement.remove();
                     } else {
-                         console.warn(`Elemento del DOM no encontrado para eliminar: project-${projectId}`); // Log de advertencia
+                         console.warn(`Elemento DOM no encontrado: project-${projectId}`);
                     }
-
-                    // Eliminar de la estructura de datos
                     delete projects[projectId];
-                    console.log(`Proyecto eliminado de la estructura de datos: ${projectId}`); // Log de depuración
-
-                    saveProjects(); // Guardar cambios
-                    console.log("Proyectos guardados después de eliminar."); // Log de depuración
-
-                     // Mostrar mensaje si no quedan proyectos
+                    console.log(`Proyecto eliminado de datos: ${projectId}`);
+                    saveProjects();
+                    console.log("Proyectos guardados.");
                      if (Object.keys(projects).length === 0) {
-                         renderAllProjects(); // Volver a renderizar para mostrar el mensaje
+                         renderAllProjects();
                      }
-
                  } else {
-                      console.log(`Cancelada eliminación de proyecto: ${projectId}`); // Log de depuración
+                      console.log(`Cancelada eliminación: ${projectId}`);
                  }
              } else {
-                 console.error(`Error: No se encontraron datos para el proyecto con ID: ${projectId}. No se puede eliminar.`);
-                 // Informar al usuario podría ser útil aquí
-                 // alert("Error: El proyecto que intentas eliminar no existe en los datos.");
-
-                  // Intenta eliminar el elemento del DOM igualmente si existe, por si acaso
+                 console.error(`Error: No se encontraron datos para proyecto: ${projectId}.`);
                   const projectElement = document.getElementById(`project-${projectId}`);
                   if (projectElement) {
-                       console.warn(`Eliminando elemento del DOM huérfano: project-${projectId}`);
+                       console.warn(`Eliminando elemento DOM huérfano: project-${projectId}`);
                        projectElement.remove();
                   }
              }
         }
 
-
-        // Eliminar una tarea
         function handleDeleteTask(projectId, listKey, taskId) {
-             // Eliminar del DOM
              const taskElement = document.getElementById(`task-${taskId}`);
              if (taskElement) {
                  taskElement.remove();
              } else {
-                 console.warn(`Elemento de tarea no encontrado en el DOM para eliminar: ${taskId}`);
+                 console.warn(`Elemento tarea no encontrado en DOM: ${taskId}`);
              }
 
-             // Eliminar de la estructura de datos
-             // Verificar existencia antes de acceder
              if (projects[projectId] && projects[projectId].tasks && Array.isArray(projects[projectId].tasks[listKey])) {
                  const taskList = projects[projectId].tasks[listKey];
                  const taskIndex = taskList.findIndex(task => task.id === taskId);
                  if (taskIndex > -1) {
                      taskList.splice(taskIndex, 1);
-                     saveProjects(); // Guardar cambios
+                     saveProjects();
                  } else {
-                      console.warn(`Tarea ${taskId} no encontrada en la lista ${listKey} del proyecto ${projectId} en los datos.`);
+                      console.warn(`Tarea ${taskId} no encontrada en datos: lista ${listKey}, proyecto ${projectId}.`);
                  }
              } else {
-                  console.error(`Estructura de datos inválida al intentar eliminar tarea ${taskId} de la lista ${listKey} del proyecto ${projectId}.`);
+                  console.error(`Datos inválidos al eliminar tarea ${taskId}.`);
              }
         }
 
-
-        // --- Manejadores de Drag and Drop ---
+        // --- Manejadores de Drag and Drop (sin cambios lógicos) ---
 
         function handleDragStart(e) {
-            // Asegurarse de que el elemento arrastrado es la tarea (el div .task)
             if (e.target.classList.contains('task')) {
                 draggedTask = e.target;
                 e.dataTransfer.setData('text/plain', draggedTask.id);
                 e.dataTransfer.effectAllowed = 'move';
-                setTimeout(() => {
-                    if (draggedTask) draggedTask.classList.add('dragging');
-                }, 0); // Timeout para permitir que el navegador pinte el inicio del drag
+                setTimeout(() => { if (draggedTask) draggedTask.classList.add('dragging'); }, 0);
             } else {
-                e.preventDefault(); // Prevenir arrastrar si no es el elemento .task
+                e.preventDefault();
             }
         }
 
@@ -424,28 +449,15 @@
             if (draggedTask && draggedTask.classList.contains('dragging')) {
                  draggedTask.classList.remove('dragging');
             }
-            // Quitar clases de resaltado de todas las listas al finalizar el arrastre
-            document.querySelectorAll('.task-list.drag-over').forEach(list => {
-                list.classList.remove('drag-over');
-            });
-            draggedTask = null; // Limpiar la referencia
+            document.querySelectorAll('.task-list.drag-over').forEach(list => list.classList.remove('drag-over'));
+            draggedTask = null;
         }
 
-
-        function handleDragOver(e) {
-            e.preventDefault(); // Necesario para permitir el drop
-            e.dataTransfer.dropEffect = 'move';
-            // Opcional: Añadir clase 'drag-over' aquí si se desea feedback inmediato
-            // const targetList = e.currentTarget;
-            // if (targetList.classList.contains('task-list') && draggedTask && targetList !== draggedTask.parentNode) {
-            //     targetList.classList.add('drag-over');
-            // }
-        }
+        function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
 
         function handleDragEnter(e) {
             e.preventDefault();
             const targetList = e.currentTarget;
-            // Asegurarse de que entramos en una lista válida y no en la de origen
             if (targetList.classList.contains('task-list') && draggedTask && targetList !== draggedTask.parentNode) {
                 targetList.classList.add('drag-over');
             }
@@ -453,8 +465,6 @@
 
         function handleDragLeave(e) {
              const targetList = e.currentTarget;
-             // Solo quitar 'drag-over' si salimos de la lista hacia un elemento que NO sea hijo de ella
-             // Esto evita que parpadee al mover sobre tareas dentro de la lista destino
              if (targetList.classList.contains('task-list') && !targetList.contains(e.relatedTarget)) {
                  targetList.classList.remove('drag-over');
              }
@@ -463,20 +473,9 @@
         function handleDrop(e) {
             e.preventDefault();
             const targetListElement = e.currentTarget;
-
-            // Asegurarse de que el destino es una lista válida
-            if (!targetListElement.classList.contains('task-list')) {
-                console.warn("Drop target no es una lista de tareas válida.");
-                if(targetListElement.classList.contains('drag-over')) targetListElement.classList.remove('drag-over');
-                return;
-            }
-
-            targetListElement.classList.remove('drag-over'); // Quitar resaltado
-
-            if (!draggedTask) {
-                 console.warn("Intento de drop sin una tarea arrastrada válida.");
-                 return;
-            }
+            if (!targetListElement.classList.contains('task-list')) return;
+            targetListElement.classList.remove('drag-over');
+            if (!draggedTask) return;
 
             const targetProjectId = targetListElement.dataset.projectId;
             const targetListKey = targetListElement.dataset.listKey;
@@ -484,66 +483,41 @@
             const sourceListKey = draggedTask.dataset.listKey;
             const taskId = draggedTask.dataset.taskId;
 
-            // --- Validaciones ---
-            if (targetProjectId !== sourceProjectId) {
-                console.warn("No se puede mover tareas entre proyectos diferentes.");
-                return;
-            }
-            if (targetListElement === draggedTask.parentNode) {
-                console.log("Soltado en la misma lista.");
-                return;
-            }
+            if (targetProjectId !== sourceProjectId) return;
+            if (targetListElement === draggedTask.parentNode) return;
 
-            // --- Mover la tarea en el DOM ---
-            targetListElement.appendChild(draggedTask);
+            targetListElement.appendChild(draggedTask); // Mover en DOM
 
-            // --- Actualizar la estructura de datos (projects) ---
-            if (!projects[sourceProjectId] || !projects[sourceProjectId].tasks || !Array.isArray(projects[sourceProjectId].tasks[sourceListKey])) {
-                 console.error(`Error: Datos de origen inválidos al mover tarea. Proyecto: ${sourceProjectId}, Lista: ${sourceListKey}`);
-                 // Revertir el movimiento en el DOM si falla la actualización de datos? Podría ser complejo.
-                 // Por ahora, solo loguear el error.
-                 return;
-            }
+            // Actualizar datos
+             if (!projects[sourceProjectId]?.tasks?.[sourceListKey]) return; // Chequeo robusto
             const sourceList = projects[sourceProjectId].tasks[sourceListKey];
             const taskIndex = sourceList.findIndex(task => task.id === taskId);
 
             if (taskIndex > -1) {
                 const [movedTask] = sourceList.splice(taskIndex, 1);
-
-                 if (!projects[targetProjectId] || !projects[targetProjectId].tasks || !Array.isArray(projects[targetProjectId].tasks[targetListKey])) {
-                     console.error(`Error: Datos de destino inválidos al mover tarea. Proyecto: ${targetProjectId}, Lista: ${targetListKey}`);
-                     // Reintentar añadir a la lista origen?
-                     sourceList.splice(taskIndex, 0, movedTask); // Reinsertar en origen si el destino falla
-                     // Mover de vuelta en el DOM?
-                     // document.getElementById(`list-${sourceProjectId}-${sourceListKey}`).appendChild(draggedTask); // Podría causar bucles si hay más errores
+                 if (!projects[targetProjectId]?.tasks?.[targetListKey]) { // Chequeo robusto
+                     sourceList.splice(taskIndex, 0, movedTask); // Revertir si destino no es válido
+                     // Considerar revertir DOM aquí también si es crítico
                      return;
                  }
                 const targetList = projects[targetProjectId].tasks[targetListKey];
                 targetList.push(movedTask);
 
-                // Actualizar el dataset de la tarea movida en el DOM
                 draggedTask.dataset.listKey = targetListKey;
                 const deleteBtn = draggedTask.querySelector('.delete-task-btn');
-                 if (deleteBtn) {
-                     deleteBtn.dataset.listKey = targetListKey; // Actualizar también en el botón de borrar
-                 }
+                 if (deleteBtn) deleteBtn.dataset.listKey = targetListKey;
 
                 saveProjects();
-                console.log(`Tarea ${taskId} movida de ${sourceListKey} a ${targetListKey} en proyecto ${targetProjectId}`);
             } else {
-                console.error("No se encontró la tarea en la lista de origen en los datos durante el drop.");
-                // El elemento ya se movió en el DOM, pero los datos no se actualizaron.
-                // Esto indica una posible desincronización. Recargar podría ser una opción drástica.
+                 console.error("Tarea no encontrada en datos origen durante drop.");
             }
-            // La limpieza de draggedTask se hace en handleDragEnd
         }
 
         // --- Inicialización ---
         document.addEventListener('DOMContentLoaded', () => {
             loadProjects(); // Cargar proyectos al iniciar
-            // Inicializar Lucide Icons globalmente una vez al cargar
-            // Las llamadas posteriores se harán al añadir elementos específicos
-             lucide.createIcons();
+            // Inicializar Lucide Icons globalmente (ya se llama en renderAllProjects y applyTheme)
+            // if (typeof lucide !== 'undefined') { lucide.createIcons(); }
         });
 
     </script>
